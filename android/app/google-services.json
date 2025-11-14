@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "523114257681",
+    "project_id": "drawhub-bacb2",
+    "storage_bucket": "drawhub-bacb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:523114257681:android:b8c823a79404c537c680b0",
+        "android_client_info": {
+          "package_name": "com.example.draw_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDedFj3Xxri__goysd4V4ySiqftPk3H33k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

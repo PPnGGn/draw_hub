@@ -1,8 +1,1 @@
-{
-  "firestore": {
-    "database": "(default)",
-    "location": "europe-west9",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  }
-}
+{"firestore":{"database":"(default)","location":"europe-west9","rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"drawhub-bacb2","appId":"1:523114257681:android:b8c823a79404c537c680b0","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"drawhub-bacb2","appId":"1:523114257681:ios:16435e9b43dccc4dc680b0","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"drawhub-bacb2","appId":"1:523114257681:ios:16435e9b43dccc4dc680b0","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"drawhub-bacb2","configurations":{"android":"1:523114257681:android:b8c823a79404c537c680b0","ios":"1:523114257681:ios:16435e9b43dccc4dc680b0","macos":"1:523114257681:ios:16435e9b43dccc4dc680b0","windows":"1:523114257681:web:f6ff2577e3a1deb3c680b0"}}}}}}
