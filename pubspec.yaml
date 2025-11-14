@@ -30,8 +30,8 @@ dependencies:
 
 
   # Firebase
-
-
+  firebase_auth: ^6.1.2
+  firebase_core: ^4.2.1
 
 
 
