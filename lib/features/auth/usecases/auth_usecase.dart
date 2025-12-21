@@ -22,28 +22,27 @@ class AuthUseCase {
     }
   }
 
-
-    Future<User?> loginUseCase({
-      required String email,
-      required String password,
-    }) async {
-      try {
-        final user = await _authService.loginViaEmailPassword(
-          email: email,
-          password: password,
-        );
-        return user;
-      } catch (e) {
-        print('Ошибка входа: $e');
-        return null;
-      }
-    }
-
-    Future<void> logoutUseCase() async {
-      try {
-        await _authService.logout();
-      } catch (e) {
-        print('не удалось выйти: $e');
-      }
+  Future<User?> loginUseCase({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final user = await _authService.loginViaEmailPassword(
+        email: email,
+        password: password,
+      );
+      return user;
+    } catch (e) {
+      print('Ошибка входа: $e');
+      return null;
     }
   }
+
+  Future<void> logoutUseCase() async {
+    try {
+      await _authService.logout();
+    } catch (e) {
+      print('не удалось выйти: $e');
+    }
+  }
+}

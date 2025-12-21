@@ -1,7 +1,7 @@
-import 'package:draw_hub/auth/pages/login_page.dart';
-import 'package:draw_hub/auth/pages/registration_page.dart';
+import 'package:draw_hub/features/auth/pages/login_page.dart';
+import 'package:draw_hub/features/auth/pages/registration_page.dart';
 import 'package:draw_hub/core/providers/auth_providers.dart';
-import 'package:draw_hub/gallery/pages/gallery_page.dart';
+import 'package:draw_hub/features/gallery/pages/gallery_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,7 +11,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authState = ref.read(authStateChangesProvider);
       final isLoggedIn = authState.value != null;
-      final isOnLoginPage = state.matchedLocation == '/login' ||
+      final isOnLoginPage =
+          state.matchedLocation == '/login' ||
           state.matchedLocation == '/registration';
 
       if (isLoggedIn && isOnLoginPage) {

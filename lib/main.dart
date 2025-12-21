@@ -1,3 +1,4 @@
+import 'package:draw_hub/core/theme/app_theme.dart';
 import 'package:draw_hub/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _router = ref.watch(routerProvider);
-    return MaterialApp.router(routerConfig: _router);
+    final router = ref.watch(routerProvider);
+    return MaterialApp.router(routerConfig: router, theme: appTheme);
   }
 }
