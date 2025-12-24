@@ -1,5 +1,4 @@
-import 'package:draw_hub/features/auth/domain/auth_notifier.dart';
-import 'package:draw_hub/features/auth/domain/auth_state.dart';
+import 'package:draw_hub/features/auth/domain/auth_controller.dart';
 import 'package:draw_hub/features/auth/widgets/custom_text_field.dart';
 import 'package:draw_hub/features/auth/widgets/error_snack_bar.dart';
 import 'package:draw_hub/features/widgets/gradient_button.dart';
@@ -28,9 +27,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authControllerProvider);
 
-    final isLoading = authState is AuthStateLoading;
+    final isLoading = authState is AuthOperationLoading;
 
     return Scaffold(
       body: Stack(
@@ -100,11 +99,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     await ref
-        .read(authNotifierProvider.notifier)
+        .read(authControllerProvider.notifier)
         .login(email: email, password: password);
 
-    final newState = ref.read(authNotifierProvider);
-    if (newState is AuthStateError) {
+    final newState = ref.read(authControllerProvider);
+    if (newState is AuthOperationError) {
       if (!mounted) return;
       showErrorSnackBar(context, newState.message);
     }

@@ -1,6 +1,5 @@
+import 'package:draw_hub/features/auth/domain/auth_controller.dart';
 import 'package:draw_hub/features/auth/widgets/custom_text_field.dart';
-import 'package:draw_hub/features/auth/domain/auth_notifier.dart';
-import 'package:draw_hub/features/auth/domain/auth_state.dart';
 import 'package:draw_hub/features/auth/widgets/error_snack_bar.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
@@ -31,8 +30,8 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-    final isLoading = authState is AuthStateLoading;
+    final authState = ref.watch(authControllerProvider);
+    final isLoading = authState is AuthOperationLoading;
 
     return Scaffold(
       body: Stack(
@@ -123,12 +122,12 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
     }
 
     await ref
-        .read(authNotifierProvider.notifier)
+        .read(authControllerProvider.notifier)
         .register(email: email, password: password);
 
-    final newState = ref.read(authNotifierProvider);
-    if (newState is AuthStateAuthenticated) {
-    } else if (newState is AuthStateError) {
+    final newState = ref.read(authControllerProvider);
+    if (newState is AuthOperationSuccess) {
+    } else if (newState is AuthOperationError) {
       if (!mounted) return;
       showErrorSnackBar(context, newState.message);
     }

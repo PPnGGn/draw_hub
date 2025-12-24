@@ -9,7 +9,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      final authState = ref.read(authStateChangesProvider);
+      final authState = ref.watch(authUserProvider);
       final isLoggedIn = authState.value != null;
       final isOnLoginPage =
           state.matchedLocation == '/login' ||
@@ -45,7 +45,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 
   // Слушаем изменения authState и обновляем роутер
-  ref.listen(authStateChangesProvider, (_, __) {
+  ref.listen(authUserProvider, (_, _) {
     router.refresh(); // Принудительно обновляем роутер
   });
 
