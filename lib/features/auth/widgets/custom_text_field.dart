@@ -1,17 +1,38 @@
 import 'package:draw_hub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   const CustomTextField({
     super.key,
     required this.controller,
     required this.hintText,
     required this.labelText,
+    this.isPassword = false,
   });
 
   final TextEditingController controller;
   final String hintText;
   final String labelText;
+  final bool isPassword;
+
+  @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  late bool _obscureText;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = widget.isPassword;
+  }
+
+  void _toggleObscure() {
+    setState(() {
+      _obscureText = !_obscureText;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,21 +52,42 @@ class CustomTextField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(labelText, style: Theme.of(context).textTheme.bodyMedium),
+          Text(widget.labelText, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 4),
           TextField(
-            controller: controller,
+            controller: widget.controller,
             style: Theme.of(context).textTheme.bodyMedium,
+            obscureText: widget.isPassword ? _obscureText : false,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.only(bottom: 8),
               isDense: true,
+
+              suffixIcon: widget.isPassword
+                  ? IconButton(
+                      onPressed: _toggleObscure,
+                      icon: Icon(
+                        _obscureText
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        size: 20,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    )
+                  : null,
+
+              suffixIconConstraints: const BoxConstraints(
+                maxHeight: 24,
+                minHeight: 24,
+              ),
+
               enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(color: AppColors.gray, width: 1.0),
               ),
               focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.gray, width: 2.0),
+                borderSide: BorderSide(color: AppColors.secondary, width: 2.0),
               ),
-              hintText: hintText,
+              hintText: widget.hintText,
               hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).hintColor,
               ),

@@ -1,17 +1,19 @@
-import 'package:draw_hub/features/auth/usecases/auth_usecase.dart';
 import 'package:draw_hub/features/auth/widgets/custom_text_field.dart';
-import 'package:draw_hub/services/auth_service.dart';
+import 'package:draw_hub/features/auth/domain/auth_notifier.dart';
+import 'package:draw_hub/features/auth/domain/auth_state.dart';
+import 'package:draw_hub/features/auth/widgets/error_snack_bar.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class RegistrationPage extends StatefulWidget {
+class RegistrationPage extends ConsumerStatefulWidget {
   const RegistrationPage({super.key});
 
   @override
-  State<RegistrationPage> createState() => _RegistrationPageState();
+  ConsumerState<RegistrationPage> createState() => _RegistrationPageState();
 }
 
-class _RegistrationPageState extends State<RegistrationPage> {
-  final AuthUseCase _authUseCase = AuthUseCase(AuthService());
+class _RegistrationPageState extends ConsumerState<RegistrationPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -19,7 +21,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
       TextEditingController();
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _passwordConfirmController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState is AuthStateLoading;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -60,41 +74,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   controller: _passwordController,
                   hintText: 'Введите пароль',
                   labelText: 'Пароль',
+                  isPassword: true,
                 ),
                 const SizedBox(height: 20),
                 CustomTextField(
                   controller: _passwordConfirmController,
                   hintText: 'Введите пароль повторно',
                   labelText: 'Подтвердите пароль',
+                  isPassword: true,
                 ),
                 const Spacer(),
                 FilledButton(
-                  onPressed: () async {
-                    final email = _emailController.text.trim();
-                    final password = _passwordController.text.trim();
-
-                    try {
-                      final user = await _authUseCase.registrationUseCase(
-                        email: email,
-                        password: password,
-                      );
-
-                      if (user != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Регистрация успешна!')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Ошибка регистрации')),
-                        );
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
-                    }
-                  },
-                  child: Text('Регистрация'),
+                  onPressed: isLoading ? null : _handleRegistration,
+                  child: isLoading
+                      ? const Text('Загрузка...')
+                      : const Text('Регистрация'),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -103,5 +97,40 @@ class _RegistrationPageState extends State<RegistrationPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleRegistration() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirm = _passwordConfirmController.text.trim();
+
+    // Валидация email
+    if (!EmailValidator.validate(email)) {
+      showErrorSnackBar(context, 'Неверный e-mail');
+      return;
+    }
+
+    // Валидация пароля (минимальная длина)
+    if (password.length < 6) {
+      showErrorSnackBar(context, 'Слишком легкий пароль');
+      return;
+    }
+
+    // Совпадение паролей
+    if (password != confirm) {
+      showErrorSnackBar(context, 'Пароли не совпадают');
+      return;
+    }
+
+    await ref
+        .read(authNotifierProvider.notifier)
+        .register(email: email, password: password);
+
+    final newState = ref.read(authNotifierProvider);
+    if (newState is AuthStateAuthenticated) {
+    } else if (newState is AuthStateError) {
+      if (!mounted) return;
+      showErrorSnackBar(context, newState.message);
+    }
   }
 }
