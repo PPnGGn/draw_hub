@@ -16,8 +16,7 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _passwordConfirmController =
-      TextEditingController();
+  final TextEditingController _passwordConfirmController = TextEditingController();
 
   @override
   void dispose() {
@@ -34,6 +33,7 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
     final isLoading = authState is AuthOperationLoading;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           Image.asset(
@@ -44,53 +44,54 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                Text(
-                  'Регистрация',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.start,
-                ),
-                const SizedBox(height: 20),
-                CustomTextField(
-                  controller: _nameController,
-                  hintText: 'Введите имя',
-                  labelText: 'Имя',
-                ),
-                const SizedBox(height: 20),
-                CustomTextField(
-                  controller: _emailController,
-                  hintText: 'Введите email',
-                  labelText: 'E-mail',
-                ),
-                const SizedBox(height: 20),
-                const Divider(),
-                const SizedBox(height: 20),
-                CustomTextField(
-                  controller: _passwordController,
-                  hintText: 'Введите пароль',
-                  labelText: 'Пароль',
-                  isPassword: true,
-                ),
-                const SizedBox(height: 20),
-                CustomTextField(
-                  controller: _passwordConfirmController,
-                  hintText: 'Введите пароль повторно',
-                  labelText: 'Подтвердите пароль',
-                  isPassword: true,
-                ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: isLoading ? null : _handleRegistration,
-                  child: isLoading
-                      ? const Text('Загрузка...')
-                      : const Text('Регистрация'),
-                ),
-                const SizedBox(height: 40),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 200),
+                  Text(
+                    'Регистрация',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.start,
+                  ),
+                  const SizedBox(height: 20),
+                  CustomTextField(
+                    controller: _nameController,
+                    hintText: 'Введите имя',
+                    labelText: 'Имя',
+                  ),
+                  const SizedBox(height: 20),
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: 'Введите email',
+                    labelText: 'E-mail',
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 20),
+                  CustomTextField(
+                    controller: _passwordController,
+                    hintText: 'Введите пароль',
+                    labelText: 'Пароль',
+                    isPassword: true,
+                  ),
+                  const SizedBox(height: 20),
+                  CustomTextField(
+                    controller: _passwordConfirmController,
+                    hintText: 'Введите пароль повторно',
+                    labelText: 'Подтвердите пароль',
+                    isPassword: true,
+                  ),
+                  const SizedBox(height: 100),
+
+                  FilledButton(
+                    onPressed: isLoading ? null : _handleRegistration,
+                    child: isLoading ? const Text('Загрузка...') : const Text('Регистрация'),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ],
@@ -121,9 +122,7 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
       return;
     }
 
-    await ref
-        .read(authControllerProvider.notifier)
-        .register(email: email, password: password);
+    await ref.read(authControllerProvider.notifier).register(email: email, password: password);
 
     final newState = ref.read(authControllerProvider);
     if (newState is AuthOperationSuccess) {

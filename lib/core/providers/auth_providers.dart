@@ -1,5 +1,5 @@
 import 'package:draw_hub/features/auth/usecases/auth_usecase.dart';
-import 'package:draw_hub/models/auth_user.dart';
+import 'package:draw_hub/features/auth/models/auth_user.dart';
 import 'package:draw_hub/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

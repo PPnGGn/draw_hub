@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 final ThemeData appTheme = ThemeData(
   primaryColor: AppColors.primary,
   //scaffoldBackgroundColor: AppColors.surface,
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF181D23),
-    foregroundColor: Colors.yellow,
+  appBarTheme: AppBarTheme(
+    
+    foregroundColor: Colors.red,
     elevation: 1,
     centerTitle: true,
     surfaceTintColor: Colors.transparent,
     titleTextStyle: TextStyle(
       fontSize: 20,
       fontWeight: FontWeight.bold,
-      color: Colors.yellow,
+      color: AppColors.white,
     ),
     iconTheme: IconThemeData(color: AppColors.primary),
   ),
