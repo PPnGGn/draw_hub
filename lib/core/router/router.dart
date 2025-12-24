@@ -9,21 +9,33 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      final authState = ref.watch(authUserProvider);
-      final isLoggedIn = authState.value != null;
-      final isOnLoginPage =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/registration';
+      final authAsync = ref.watch(authUserProvider);
 
-      if (isLoggedIn && isOnLoginPage) {
-        return '/gallery';
-      }
+      // Обрабатываем все состояния AsyncValue
+      return authAsync.when(
+        data: (user) {
+          final isLoggedIn = user != null;
+          final isOnAuthPage =
+              state.matchedLocation == '/login' ||
+              state.matchedLocation == '/registration';
 
-      if (!isLoggedIn && !isOnLoginPage) {
-        return '/login';
-      }
-
-      return null;
+          if (isLoggedIn && isOnAuthPage) {
+            return '/gallery';
+          }
+          if (!isLoggedIn && !isOnAuthPage) {
+            return '/login';
+          }
+          return null;
+        },
+        loading: () {
+          // Во время загрузки показываем текущую страницу
+          // или можно показать splash screen`
+          return null;
+        },
+        error: (error, stack) {
+          return '/login';
+        },
+      );
     },
     routes: <RouteBase>[
       GoRoute(

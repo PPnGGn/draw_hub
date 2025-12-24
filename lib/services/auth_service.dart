@@ -1,10 +1,10 @@
+import 'package:draw_hub/core/errors/auth_exception.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<User?> registerViaEmailPassword({
+  Future<User> registerViaEmailPassword({
     required String email,
     required String password,
   }) async {
@@ -13,20 +13,18 @@ class AuthService {
         email: email,
         password: password,
       );
-      return credential.user;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        debugPrint('The password provided is too weak.');
-      } else if (e.code == 'email-already-in-use') {
-        debugPrint('The account already exists for that email.');
+
+      if (credential.user == null) {
+        throw AuthException('unknown', 'Не удалось создать пользователя');
       }
-    } catch (e) {
-      debugPrint(e.toString());
+
+      return credential.user!;
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.code, e.message ?? 'Unknown Firebase error');
     }
-    return null;
   }
 
-  Future<User?> loginViaEmailPassword({
+  Future<User> loginViaEmailPassword({
     required String email,
     required String password,
   }) async {
@@ -35,18 +33,22 @@ class AuthService {
         email: email,
         password: password,
       );
-      return credential.user;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        debugPrint('No user found for that email.');
-      } else if (e.code == 'wrong-password') {
-        debugPrint('Wrong password provided for that user.');
+
+      if (credential.user == null) {
+        throw AuthException('unknown', 'Не удалось войти');
       }
+
+      return credential.user!;
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.code, e.message ?? 'Unknown Firebase error');
     }
-    return null;
   }
 
   Future<void> logout() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.code, e.message ?? 'Не удалось выйти');
+    }
   }
 }

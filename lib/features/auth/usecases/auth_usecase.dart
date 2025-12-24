@@ -6,43 +6,27 @@ class AuthUseCase {
 
   AuthUseCase(this._authService);
 
-  Future<User?> registrationUseCase({
+  Future<User> registrationUseCase({
     required String email,
     required String password,
   }) async {
-    try {
-      final user = await _authService.registerViaEmailPassword(
-        email: email,
-        password: password,
-      );
-      return user;
-    } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException: ${e.code}, ${e.message}');
-      return null;
-    }
+    return await _authService.registerViaEmailPassword(
+      email: email,
+      password: password,
+    );
   }
 
-  Future<User?> loginUseCase({
+  Future<User> loginUseCase({
     required String email,
     required String password,
   }) async {
-    try {
-      final user = await _authService.loginViaEmailPassword(
-        email: email,
-        password: password,
-      );
-      return user;
-    } catch (e) {
-      print('Ошибка входа: $e');
-      return null;
-    }
+    return await _authService.loginViaEmailPassword(
+      email: email,
+      password: password,
+    );
   }
 
   Future<void> logoutUseCase() async {
-    try {
-      await _authService.logout();
-    } catch (e) {
-      print('не удалось выйти: $e');
-    }
+    await _authService.logout();
   }
 }
