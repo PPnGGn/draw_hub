@@ -4,6 +4,7 @@ import 'package:draw_hub/core/theme/app_colors.dart';
 import 'package:draw_hub/features/widgets/gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class GalleryPage extends ConsumerWidget {
   const GalleryPage({super.key});
@@ -39,19 +40,19 @@ class GalleryPage extends ConsumerWidget {
             width: double.infinity,
             height: MediaQuery.of(context).size.height,
           ),
-          isEmpty ? _buildEmptyGallery() : _buildGallery(),
+          isEmpty ? _buildEmptyGallery(context) : _buildGallery(),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyGallery() {
+  Widget _buildEmptyGallery(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          GradientButton(onPressed: () {}, text: "Создать"),
+          GradientButton(onPressed: () => context.push('/drawing'), text: "Создать"),
           const SizedBox(height: 40),
         ],
       ),
@@ -61,4 +62,5 @@ class GalleryPage extends ConsumerWidget {
   Widget _buildGallery() {
     return const Center(child: Text('Gallery'));
   }
+ 
 }

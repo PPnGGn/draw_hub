@@ -1,6 +1,7 @@
 import 'package:draw_hub/features/auth/pages/login_page.dart';
 import 'package:draw_hub/features/auth/pages/registration_page.dart';
 import 'package:draw_hub/core/providers/auth_providers.dart';
+import 'package:draw_hub/features/gallery/pages/drawing_page.dart';
 import 'package:draw_hub/features/gallery/pages/gallery_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,6 +53,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/gallery',
         name: 'gallery',
         builder: (context, state) => const GalleryPage(),
+      ),
+      GoRoute(
+        path: '/drawing',
+        name: 'drawing',
+        builder: (context, state) => const DrawingPage(),
       ),
     ],
   );

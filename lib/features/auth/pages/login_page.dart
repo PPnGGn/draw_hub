@@ -29,25 +29,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final operationState = ref.watch(authControllerProvider);
 
-    // КЛЮЧЕВОЙ МОМЕНТ: реактивно слушаем изменения состояния
-    // Это сработает автоматически при любом изменении authControllerProvider
     ref.listen<AuthOperationState>(authControllerProvider, (previous, next) {
-      // Показываем ошибки автоматически
       if (next is AuthOperationError) {
         showErrorSnackBar(context, next.message);
       }
-
-      // Опционально: можно показать success toast
-      // if (next is AuthOperationSuccess) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     const SnackBar(content: Text('Вход выполнен успешно')),
-      //   );
-      // }
     });
 
     final isLoading = operationState is AuthOperationLoading;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Image.asset(
@@ -107,7 +98,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Валидация на UI уровне
     if (!EmailValidator.validate(email)) {
       showErrorSnackBar(context, 'Неверный формат e-mail');
       return;
@@ -118,18 +108,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    // Просто вызываем метод
-    // ref.listen автоматически покажет ошибку если что-то пойдет не так
     await ref
         .read(authControllerProvider.notifier)
         .login(email: email, password: password);
-
-    // После успешного логина:
-    // 1. authUserProvider (StreamProvider) получит обновление от Firebase
-    // 2. router.dart слушает authUserProvider через ref.listen
-    // 3. router.refresh() вызовет redirect
-    // 4. redirect увидит что user != null и перенаправит на /gallery
-
-    // Ничего вручную делать НЕ нужно!
   }
 }
