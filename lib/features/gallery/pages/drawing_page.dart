@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:draw_hub/core/providers/auth_providers.dart';
 import 'package:draw_hub/core/providers/gallery_providers.dart';
 import 'package:draw_hub/features/gallery/widgets/drawing_canwas.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DrawingPage extends ConsumerStatefulWidget {
   const DrawingPage({super.key});
@@ -13,6 +17,8 @@ class DrawingPage extends ConsumerStatefulWidget {
 }
 
 class _DrawingPageState extends ConsumerState<DrawingPage> {
+
+   final GlobalKey _canvasKey = GlobalKey();
   // Список точек для рисования
   final List<DrawingPoint> _points = [];
   
@@ -22,7 +28,7 @@ class _DrawingPageState extends ConsumerState<DrawingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.green,
       appBar: AppBar(
         title: const Text('Редактор'),
         actions: [
@@ -47,12 +53,15 @@ class _DrawingPageState extends ConsumerState<DrawingPage> {
           
           // Холст для рисования
           Expanded(
-            child: DrawingCanvas(
-              points: _points,
-              backgroundImage: _backgroundImage,
-              onPanStart: _onPanStart,
-              onPanUpdate: _onPanUpdate,
-              onPanEnd: _onPanEnd,
+            child: RepaintBoundary(
+              key: _canvasKey,
+              child: DrawingCanvas(
+                points: _points,
+                backgroundImage: _backgroundImage,
+                onPanStart: _onPanStart,
+                onPanUpdate: _onPanUpdate,
+                onPanEnd: _onPanEnd,
+              ),
             ),
           ),
         ],
@@ -228,11 +237,76 @@ Future<void> _showPermissionDeniedDialog() async {
 
   // Сохранение рисунка (пока заглушка)
   Future<void> _saveDrawing() async {
-    // TODO: Следующий шаг - сохранение в Firebase
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Сохранение пока не реализовано')),
+  try {
+    // Показываем индикатор загрузки
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
+
+    // 1. Получаем текущего пользователя
+    final currentUser = ref.read(authUserProvider).value;
+    if (currentUser == null) {
+      throw Exception('Пользователь не авторизован');
+    }
+
+    // 2. Создаем скриншот холста
+    final boundary = _canvasKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 2.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final bytes = byteData!.buffer.asUint8List();
+
+    // 3. Сохраняем во временный файл
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/drawing_${DateTime.now().millisecondsSinceEpoch}.png');
+    await file.writeAsBytes(bytes);
+
+    // 4. Загружаем в Firebase
+    final storageService = ref.read(firebaseStorageServiceProvider);
+    await storageService.saveDrawing(
+      imageFile: file,
+      authorId: currentUser.id, 
+      title: 'Рисунок ${DateTime.now().day}.${DateTime.now().month}.${DateTime.now().year}',
+    );
+
+    // 5. Удаляем временный файл
+    await file.delete();
+
+    // Закрываем индикатор загрузки
+    if (mounted) {
+      Navigator.pop(context);
+      
+      // Показываем успешное сообщение
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Рисунок сохранен!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Возвращаемся в галерею
+      Navigator.pop(context);
+    }
+  } catch (e) {
+    // Закрываем индикатор загрузки
+    if (mounted) {
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка сохранения: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
+}
+
+
 }
 
 // Модель точки рисования

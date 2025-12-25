@@ -9,7 +9,16 @@ import 'core/router/router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+   try {
+    debugPrint('🔥 Инициализация Firebase...');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('✅ Firebase инициализирован');
+  } catch (e) {
+    debugPrint('❌ Ошибка инициализации Firebase: $e');
+  }
 
   runApp(ProviderScope(child: const MyApp()));
 }

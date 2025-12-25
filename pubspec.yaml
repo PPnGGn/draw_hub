@@ -28,11 +28,14 @@ dependencies:
   firebase_auth: ^6.1.3
   firebase_core: ^4.3.0
   cloud_firestore: ^6.1.1
+  firebase_storage: ^13.0.5
 
   # image from gallery
   permission_handler: ^12.0.1
   image_picker: ^1.2.1
-
+  image: ^4.7.2
+  # Path provider for file system access
+  path_provider: ^2.1.5
 
   # Validation
   email_validator: ^3.0.0

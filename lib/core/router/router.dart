@@ -30,7 +30,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
         loading: () {
           // Во время загрузки показываем текущую страницу
-          // или можно показать splash screen`
+          // или можно показать splash screen
           return null;
         },
         error: (error, stack) {
@@ -61,11 +61,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-
-  // Слушаем изменения authState и обновляем роутер
-  ref.listen(authUserProvider, (_, _) {
-    router.refresh(); // Принудительно обновляем роутер
-  });
 
   return router;
 });
