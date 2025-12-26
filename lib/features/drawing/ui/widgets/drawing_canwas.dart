@@ -1,5 +1,5 @@
 import 'dart:ui' as ui;
-import 'package:draw_hub/features/gallery/pages/drawing_page.dart';
+import 'package:draw_hub/features/drawing/ui/pages/drawing_page.dart';
 import 'package:flutter/material.dart';
 
 class DrawingCanvas extends StatelessWidget {

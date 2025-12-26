@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:draw_hub/core/providers/auth_providers.dart';
-import 'package:draw_hub/core/providers/gallery_providers.dart';
-import 'package:draw_hub/features/gallery/widgets/drawing_canwas.dart';
+import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
+import 'package:draw_hub/features/gallery/ui/providers/gallery_providers.dart';
+import 'package:draw_hub/features/drawing/ui/widgets/drawing_canwas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

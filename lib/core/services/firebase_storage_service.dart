@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:draw_hub/features/gallery/models/drawing_model.dart';
+import 'package:draw_hub/features/drawing/models/drawing_model.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 

@@ -1,6 +1,6 @@
 import 'package:draw_hub/features/auth/domain/auth_controller.dart';
-import 'package:draw_hub/features/auth/widgets/custom_text_field.dart';
-import 'package:draw_hub/features/auth/widgets/error_snack_bar.dart';
+import 'package:draw_hub/features/auth/ui/widgets/custom_text_field.dart';
+import 'package:draw_hub/features/auth/ui/widgets/error_snack_bar.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

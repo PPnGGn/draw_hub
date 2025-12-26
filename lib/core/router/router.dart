@@ -1,8 +1,8 @@
-import 'package:draw_hub/features/auth/pages/login_page.dart';
-import 'package:draw_hub/features/auth/pages/registration_page.dart';
-import 'package:draw_hub/core/providers/auth_providers.dart';
-import 'package:draw_hub/features/gallery/pages/drawing_page.dart';
-import 'package:draw_hub/features/gallery/pages/gallery_page.dart';
+import 'package:draw_hub/features/auth/ui/pages/login_page.dart';
+import 'package:draw_hub/features/auth/ui/pages/registration_page.dart';
+import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
+import 'package:draw_hub/features/drawing/ui/pages/drawing_page.dart';
+import 'package:draw_hub/features/gallery/ui/pages/gallery_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

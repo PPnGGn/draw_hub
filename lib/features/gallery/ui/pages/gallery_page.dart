@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'package:draw_hub/core/providers/auth_providers.dart';
-import 'package:draw_hub/core/providers/gallery_providers.dart';
+import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
+import 'package:draw_hub/features/gallery/ui/providers/gallery_providers.dart';
 import 'package:draw_hub/core/theme/app_colors.dart';
-import 'package:draw_hub/features/gallery/models/drawing_model.dart';
+import 'package:draw_hub/features/drawing/models/drawing_model.dart';
 import 'package:draw_hub/features/widgets/gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

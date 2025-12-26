@@ -1,4 +1,4 @@
-import 'package:draw_hub/services/auth_service.dart';
+import 'package:draw_hub/core/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthUseCase {

@@ -1,5 +1,5 @@
 import 'package:draw_hub/core/errors/auth_exception.dart';
-import 'package:draw_hub/core/providers/auth_providers.dart';
+import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
 import 'package:draw_hub/features/auth/usecases/auth_usecase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

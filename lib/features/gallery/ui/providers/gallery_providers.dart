@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:draw_hub/core/providers/auth_providers.dart';
-import 'package:draw_hub/features/gallery/models/drawing_model.dart';
-import 'package:draw_hub/services/firebase_storage_service.dart';
-import 'package:draw_hub/services/image_service.dart';
+import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
+import 'package:draw_hub/features/drawing/models/drawing_model.dart';
+import 'package:draw_hub/core/services/firebase_storage_service.dart';
+import 'package:draw_hub/core/services/image_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
