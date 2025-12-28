@@ -22,6 +22,7 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
+  shimmer: ^3.0.0
 
 
   # Firebase
@@ -34,6 +35,7 @@ dependencies:
   permission_handler: ^12.0.1
   image_picker: ^1.2.1
   image: ^4.7.2
+
   # Path provider for file system access
   path_provider: ^2.1.5
 

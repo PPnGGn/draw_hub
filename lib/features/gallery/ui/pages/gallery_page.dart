@@ -3,6 +3,7 @@ import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
 import 'package:draw_hub/features/gallery/ui/providers/gallery_providers.dart';
 import 'package:draw_hub/core/theme/app_colors.dart';
 import 'package:draw_hub/features/drawing/models/drawing_model.dart';
+import 'package:draw_hub/features/gallery/ui/widgets/gallery_shimmer_widget.dart';
 import 'package:draw_hub/features/widgets/gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,7 +67,7 @@ class GalleryPage extends ConsumerWidget {
               width: double.infinity,
               height: double.infinity,
             ),
-            const Center(child: CircularProgressIndicator()),
+            const GalleryShimmer(),
           ],
         ),
         error: (error, stack) {
@@ -133,21 +134,24 @@ class GalleryPage extends ConsumerWidget {
 
   // Галерея с рисунками
   Widget _buildGallery(List<DrawingModel> drawings, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // 2 колонки
-          crossAxisSpacing: 16, // Горизонтальный отступ
-          mainAxisSpacing: 16, // Вертикальный отступ
-          childAspectRatio: 0.75, // Соотношение ширина/высота (3:4)
-        ),
-        itemCount: drawings.length,
-        itemBuilder: (context, index) {
-          final drawing = drawings[index];
-          return _buildDrawingCard(drawing, context);
-        },
+    return GridView.builder(
+      padding: const EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        top: 24,
+        bottom: 16.0,
       ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1,
+      ),
+      itemCount: drawings.length,
+      itemBuilder: (context, index) {
+        final drawing = drawings[index];
+        return _buildDrawingCard(drawing, context);
+      },
     );
   }
 
@@ -157,62 +161,21 @@ class GalleryPage extends ConsumerWidget {
       onTap: () {
         // TODO: Открыть редактор с этим рисунком
         // context.push('/drawing', extra: drawing);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Открыть: ${drawing.title}')),
-        );
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Превью изображения
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: _buildImagePreview(drawing),
-              ),
-            ),
-
-            // Информация о рисунке
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    drawing.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDate(drawing.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          child: _buildImagePreview(drawing),
         ),
       ),
     );
@@ -226,7 +189,7 @@ class GalleryPage extends ConsumerWidget {
       if (drawing.thumbnailUrl!.startsWith('data:image')) {
         return _buildBase64Image(drawing.thumbnailUrl!);
       }
-      
+
       // Если это обычный URL (на случай если потом добавите Storage)
       return Image.network(
         drawing.thumbnailUrl!,
@@ -238,7 +201,7 @@ class GalleryPage extends ConsumerWidget {
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
@@ -265,7 +228,7 @@ class GalleryPage extends ConsumerWidget {
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
@@ -306,11 +269,7 @@ class GalleryPage extends ConsumerWidget {
     return Container(
       color: Colors.grey[200],
       child: const Center(
-        child: Icon(
-          Icons.image,
-          size: 48,
-          color: Colors.grey,
-        ),
+        child: Icon(Icons.image, size: 48, color: Colors.grey),
       ),
     );
   }

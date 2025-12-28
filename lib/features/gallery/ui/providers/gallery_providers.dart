@@ -3,7 +3,6 @@ import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
 import 'package:draw_hub/features/drawing/models/drawing_model.dart';
 import 'package:draw_hub/core/services/firebase_storage_service.dart';
 import 'package:draw_hub/core/services/image_service.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Провайдер для Firestore
@@ -24,19 +23,13 @@ final firebaseStorageServiceProvider = Provider<FirebaseStorageService>((ref) {
 // StreamProvider для списка рисунков текущего пользователя
 final userDrawingsProvider = StreamProvider<List<DrawingModel>>((ref) {
   try {
-    debugPrint('🔄 userDrawingsProvider: Загрузка...');
-    
     final authAsync = ref.watch(authUserProvider);
-    
-    // ВАЖНО: Проверяем AsyncValue правильно
+
     return authAsync.when(
       data: (user) {
         if (user == null) {
-          debugPrint('⚠️ userDrawingsProvider: Пользователь null');
           return Stream.value([]);
         }
-
-        debugPrint('✅ userDrawingsProvider: Пользователь ${user.id}');
         final firestore = ref.watch(firestoreProvider);
 
         return firestore
@@ -45,26 +38,22 @@ final userDrawingsProvider = StreamProvider<List<DrawingModel>>((ref) {
             .orderBy('createdAt', descending: true)
             .snapshots()
             .map((snapshot) {
-              debugPrint('📦 userDrawingsProvider: Получено ${snapshot.docs.length} документов');
               return snapshot.docs
                   .map((doc) => DrawingModel.fromFirestore(doc))
                   .toList();
-            }).handleError((error) {
-              debugPrint('❌ userDrawingsProvider ОШИБКА: $error');
+            })
+            .handleError((error) {
               throw error;
             });
       },
       loading: () {
-        debugPrint('⏳ userDrawingsProvider: Auth loading...');
         return Stream.value([]);
       },
       error: (error, stack) {
-        debugPrint('❌ userDrawingsProvider: Auth error: $error');
         return Stream.value([]);
       },
     );
   } catch (e) {
-    debugPrint('❌ userDrawingsProvider КРИТИЧЕСКАЯ ОШИБКА: $e');
     return Stream.value([]);
   }
 });

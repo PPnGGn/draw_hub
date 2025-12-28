@@ -9,12 +9,7 @@ class ImageService {
   Future<bool> _requestGalleryPermission() async {
     PermissionStatus status;
 
-    if (Platform.isIOS) {
-      // iOS - всегда photos
-      status = await Permission.photos.request();
-    } else {
-      status = await Permission.photos.request();
-    }
+    status = await Permission.photos.request();
 
     return status.isGranted;
   }
