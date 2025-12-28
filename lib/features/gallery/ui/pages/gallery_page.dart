@@ -37,7 +37,7 @@ class GalleryPage extends ConsumerWidget {
                 ]
               : null,
           loading: () => null,
-          error: (_, _) => null,
+          error: (_, __) => null,
         ),
       ),
       body: drawingsAsync.when(
@@ -47,7 +47,7 @@ class GalleryPage extends ConsumerWidget {
               // Фон
               Image.asset(
                 'assets/png/background_img.png',
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 width: double.infinity,
                 height: double.infinity,
               ),
@@ -63,54 +63,45 @@ class GalleryPage extends ConsumerWidget {
           children: [
             Image.asset(
               'assets/png/background_img.png',
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               width: double.infinity,
               height: double.infinity,
             ),
             const GalleryShimmer(),
           ],
         ),
-        error: (error, stack) {
-          debugPrint('Gallery error: $error');
-          debugPrint('Stack trace: $stack');
-
-          return Stack(
-            children: [
-              Image.asset(
-                'assets/png/background_img.png',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+        error: (error, stack) => Stack(
+          children: [
+            Image.asset(
+              'assets/png/background_img.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      'Ошибка загрузки: $error',
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(userDrawingsProvider),
+                    child: const Text('Повторить'),
+                  ),
+                ],
               ),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        'Ошибка загрузки: $error',
-                        style: const TextStyle(color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(userDrawingsProvider),
-                      child: const Text('Повторить'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -150,17 +141,30 @@ class GalleryPage extends ConsumerWidget {
       itemCount: drawings.length,
       itemBuilder: (context, index) {
         final drawing = drawings[index];
-        return _buildDrawingCard(drawing, context);
+        return _buildDrawingCard(drawing, context, index); // ✅ Передаём index
       },
     );
   }
 
   // Карточка рисунка
-  Widget _buildDrawingCard(DrawingModel drawing, BuildContext context) {
+  Widget _buildDrawingCard(
+    DrawingModel drawing,
+    BuildContext context,
+    int index,
+  ) {
+    final heroTag = 'gallery_image_${drawing.id}_$index';
+
     return GestureDetector(
       onTap: () {
-        // TODO: Открыть редактор с этим рисунком
-        // context.push('/drawing', extra: drawing);
+        context.push(
+          '/image-viewer',
+          extra: {
+            'imageUrl': drawing.imageUrl.isNotEmpty
+                ? drawing.imageUrl
+                : drawing.thumbnailUrl ?? '',
+            'heroTag': heroTag,
+          },
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -173,126 +177,56 @@ class GalleryPage extends ConsumerWidget {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-          child: _buildImagePreview(drawing),
+        child: Hero(
+          tag: heroTag,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
+            child: _buildImage(drawing), // ✅ Простой метод без навигации
+          ),
         ),
       ),
     );
   }
 
-  // Превью изображения
-  Widget _buildImagePreview(DrawingModel drawing) {
-    // Если есть thumbnail - показываем его
-    if (drawing.thumbnailUrl != null && drawing.thumbnailUrl!.isNotEmpty) {
-      // Проверяем что это Base64
-      if (drawing.thumbnailUrl!.startsWith('data:image')) {
-        return _buildBase64Image(drawing.thumbnailUrl!);
+  // Отображение изображения (без навигации!)
+  Widget _buildImage(DrawingModel drawing) {
+    final imageUrl = drawing.imageUrl.isNotEmpty
+        ? drawing.imageUrl
+        : drawing.thumbnailUrl ?? '';
+
+    // Base64 изображение
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        final base64Data = imageUrl.split(',').last;
+        final bytes = base64Decode(base64Data);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+        );
+      } catch (e) {
+        return _buildPlaceholder();
       }
-
-      // Если это обычный URL (на случай если потом добавите Storage)
-      return Image.network(
-        drawing.thumbnailUrl!,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholder();
-        },
-      );
     }
 
-    // Если есть основное изображение - показываем его
-    if (drawing.imageUrl.isNotEmpty) {
-      if (drawing.imageUrl.startsWith('data:image')) {
-        return _buildBase64Image(drawing.imageUrl);
-      }
-
-      return Image.network(
-        drawing.imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholder();
-        },
-      );
-    }
-
-    // Если нет изображения - показываем заглушку
-    return _buildPlaceholder();
-  }
-
-  // Отображение Base64 изображения
-  Widget _buildBase64Image(String base64String) {
-    try {
-      // Убираем префикс "data:image/jpeg;base64," или "data:image/png;base64,"
-      final base64Data = base64String.split(',').last;
-      final bytes = base64Decode(base64Data);
-
-      return Image.memory(
-        bytes,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('Error displaying base64 image: $error');
-          return _buildPlaceholder();
-        },
-      );
-    } catch (e) {
-      debugPrint('Error decoding base64: $e');
-      return _buildPlaceholder();
-    }
+    // Network изображение
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, __, ___) => _buildPlaceholder(),
+    );
   }
 
   // Заглушка для изображения
   Widget _buildPlaceholder() {
     return Container(
-      color: Colors.grey[200],
+      color: Colors.grey[300],
       child: const Center(
         child: Icon(Icons.image, size: 48, color: Colors.grey),
       ),
     );
-  }
-
-  // Форматирование даты
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Сегодня';
-    } else if (difference.inDays == 1) {
-      return 'Вчера';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} дн. назад';
-    } else if (difference.inDays < 30) {
-      final weeks = (difference.inDays / 7).floor();
-      return '$weeks нед. назад';
-    } else if (difference.inDays < 365) {
-      final months = (difference.inDays / 30).floor();
-      return '$months мес. назад';
-    } else {
-      return '${date.day}.${date.month}.${date.year}';
-    }
   }
 }

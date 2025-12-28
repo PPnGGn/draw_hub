@@ -2,6 +2,7 @@ import 'package:draw_hub/features/auth/ui/pages/login_page.dart';
 import 'package:draw_hub/features/auth/ui/pages/registration_page.dart';
 import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
 import 'package:draw_hub/features/drawing/ui/pages/drawing_page.dart';
+import 'package:draw_hub/features/gallery/ui/pages/fullscreen_image_page.dart';
 import 'package:draw_hub/features/gallery/ui/pages/gallery_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +59,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/drawing',
         name: 'drawing',
         builder: (context, state) => const DrawingPage(),
+      ),
+      GoRoute(
+        path: '/image-viewer',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, String>;
+          return FullscreenImagePage(
+            imageUrl: extra['imageUrl']!,
+            heroTag: extra['heroTag']!,
+          );
+        },
       ),
     ],
   );
