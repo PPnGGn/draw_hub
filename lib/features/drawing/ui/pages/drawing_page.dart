@@ -7,12 +7,18 @@ import 'package:draw_hub/features/drawing/ui/widgets/editor_button.dart';
 import 'package:draw_hub/features/drawing/ui/widgets/painter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Страница редактора холста (Presentation Layer)
 /// Отвечает только за отображение UI и делегирование действий контроллеру
 class EditorPage extends ConsumerStatefulWidget {
   final Uint8List? backgroundImage;
-  const EditorPage({this.backgroundImage, super.key});
+  final bool closeOnSave;
+  const EditorPage({
+    this.backgroundImage,
+    this.closeOnSave = false,
+    super.key,
+  });
 
   @override
   ConsumerState<EditorPage> createState() => _EditorPageState();
@@ -107,6 +113,14 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         Future.microtask(() {
           ref.read(drawingControllerProvider.notifier).resetOperationState();
         });
+
+        if (widget.closeOnSave) {
+          Future.microtask(() {
+            if (context.mounted) {
+              context.pop();
+            }
+          });
+        }
       }
     });
 

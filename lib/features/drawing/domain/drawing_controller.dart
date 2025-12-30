@@ -74,9 +74,11 @@ class DrawingController extends Notifier<DrawingState> {
   /// Инициализация с фоновым изображением
   void initializeEditor({Uint8List? backgroundImage}) {
     state = state.copyWith(
-      backgroundImage: backgroundImage,
       strokes: [],
       currentStroke: [],
+      backgroundImage: backgroundImage,
+      clearBackground: backgroundImage == null,
+      operationState: const DrawingOperationIdle(),
     );
   }
 
@@ -260,6 +262,7 @@ class DrawingState {
     bool? isEraserMode,
     Uint8List? backgroundImage,
     DrawingOperationState? operationState,
+    bool clearBackground = false,
   }) {
     return DrawingState(
       strokes: strokes ?? this.strokes,
@@ -267,7 +270,7 @@ class DrawingState {
       selectedColor: selectedColor ?? this.selectedColor,
       selectedWidth: selectedWidth ?? this.selectedWidth,
       isEraserMode: isEraserMode ?? this.isEraserMode,
-      backgroundImage: backgroundImage ?? this.backgroundImage,
+      backgroundImage: clearBackground ? null : (backgroundImage ?? this.backgroundImage),
       operationState: operationState ?? this.operationState,
     );
   }

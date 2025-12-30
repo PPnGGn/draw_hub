@@ -6,6 +6,7 @@ import 'package:draw_hub/features/gallery/ui/pages/fullscreen_image_page.dart';
 import 'package:draw_hub/features/gallery/ui/pages/gallery_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:typed_data';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -58,7 +59,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/drawing',
         name: 'drawing',
-        builder: (context, state) => const EditorPage(),
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            final backgroundImage = extra['backgroundImage'];
+            final closeOnSave = extra['closeOnSave'];
+            return EditorPage(
+              backgroundImage: backgroundImage is Uint8List ? backgroundImage : null,
+              closeOnSave: closeOnSave is bool ? closeOnSave : false,
+            );
+          }
+
+          return const EditorPage();
+        },
       ),
       GoRoute(
         path: '/image-viewer',

@@ -37,7 +37,7 @@ class GalleryPage extends ConsumerWidget {
                 ]
               : null,
           loading: () => null,
-          error: (_, __) => null,
+          error: (error, stackTrace) => null,
         ),
       ),
       body: drawingsAsync.when(
@@ -155,13 +155,28 @@ class GalleryPage extends ConsumerWidget {
     final heroTag = 'gallery_image_${drawing.id}_$index';
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        final imageUrl = drawing.imageUrl.isNotEmpty
+            ? drawing.imageUrl
+            : drawing.thumbnailUrl ?? '';
+
+        // Прогреваем изображение ДО навигации, чтобы Hero-переход не начинался с "пустого" кадра.
+        // Это снижает вероятность чёрного экрана/рывка в начале анимации.
+        final ImageProvider? provider = _tryBuildImageProvider(imageUrl);
+        if (provider != null) {
+          try {
+            await precacheImage(provider, context);
+          } catch (_) {
+            // ignore
+          }
+        }
+
+        if (!context.mounted) return;
+
         context.push(
           '/image-viewer',
           extra: {
-            'imageUrl': drawing.imageUrl.isNotEmpty
-                ? drawing.imageUrl
-                : drawing.thumbnailUrl ?? '',
+            'imageUrl': imageUrl,
             'heroTag': heroTag,
           },
         );
@@ -216,7 +231,7 @@ class GalleryPage extends ConsumerWidget {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      errorBuilder: (_, __, ___) => _buildPlaceholder(),
+      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
     );
   }
 
@@ -228,5 +243,25 @@ class GalleryPage extends ConsumerWidget {
         child: Icon(Icons.image, size: 48, color: Colors.grey),
       ),
     );
+  }
+
+  ImageProvider? _tryBuildImageProvider(String imageUrl) {
+    // Base64 изображение
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        final base64Data = imageUrl.split(',').last;
+        final bytes = base64Decode(base64Data);
+        return MemoryImage(bytes);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    // Network изображение
+    if (imageUrl.isNotEmpty) {
+      return NetworkImage(imageUrl);
+    }
+
+    return null;
   }
 }
