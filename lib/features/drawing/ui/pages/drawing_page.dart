@@ -1,319 +1,223 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
-import 'package:draw_hub/features/gallery/ui/providers/gallery_providers.dart';
-import 'package:draw_hub/features/drawing/ui/widgets/drawing_canwas.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
+import 'dart:typed_data';
 
-class DrawingPage extends ConsumerStatefulWidget {
-  const DrawingPage({super.key});
+import 'package:draw_hub/features/drawing/domain/drawing_controller.dart';
+import 'package:draw_hub/features/drawing/ui/widgets/brush_size_dialog.dart';
+import 'package:draw_hub/features/drawing/ui/widgets/color_picker.dart';
+import 'package:draw_hub/features/drawing/ui/widgets/editor_button.dart';
+import 'package:draw_hub/features/drawing/ui/widgets/painter.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Страница редактора холста (Presentation Layer)
+/// Отвечает только за отображение UI и делегирование действий контроллеру
+class EditorPage extends ConsumerStatefulWidget {
+  final Uint8List? backgroundImage;
+  const EditorPage({this.backgroundImage, super.key});
 
   @override
-  ConsumerState<DrawingPage> createState() => _DrawingPageState();
+  ConsumerState<EditorPage> createState() => _EditorPageState();
 }
 
-class _DrawingPageState extends ConsumerState<DrawingPage> {
-  final GlobalKey _canvasKey = GlobalKey();
-  // Список точек для рисования
-  final List<DrawingPoint> _points = [];
+class _EditorPageState extends ConsumerState<EditorPage> {
+  final GlobalKey _repaintBoundaryKey = GlobalKey();
 
-  // Фоновое изображение (если загружено из галереи)
-  ui.Image? _backgroundImage;
+  @override
+  void initState() {
+    super.initState();
+    // Инициализация контроллера с фоновым изображением
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(drawingControllerProvider.notifier).initializeEditor(backgroundImage: widget.backgroundImage);
+    });
+  }
+
+  /// Обработчик сохранения холста
+  void _onSavePressed() {
+    ref.read(drawingControllerProvider.notifier).saveDrawing(_repaintBoundaryKey);
+  }
+
+  /// Обработчик выбора размера кисти
+  Future<void> _onBrushPressed() async {
+    final currentWidth = ref.read(drawingControllerProvider).selectedWidth;
+    final newWidth = await showDialog<double>(
+      context: context,
+      builder: (context) => BrushSizeDialog(initialSize: currentWidth),
+    );
+    
+    if (newWidth != null && mounted) {
+      ref.read(drawingControllerProvider.notifier).changeBrushWidth(newWidth);
+    }
+  }
+
+  /// Обработчик выбора цвета
+  void _onColorPressed() {
+    final currentColor = ref.read(drawingControllerProvider).selectedColor;
+    showDialog(
+      context: context,
+      builder: (_) => ColorPicker(
+        selectedColor: currentColor,
+        onPick: (color) {
+          if (mounted) {
+            ref.read(drawingControllerProvider.notifier).changeColor(color);
+          }
+        },
+      ),
+    );
+  }
+
+  /// Обработчик переключения ластика
+  void _onEraserPressed() {
+    ref.read(drawingControllerProvider.notifier).toggleEraser();
+  }
+
+  /// Обработчик очистки холста
+  void _onClearPressed() {
+    ref.read(drawingControllerProvider.notifier).clearCanvas();
+  }
+
+  /// Обработчик импорта изображения
+  Future<void> _onImportImage() async {
+    await ref.read(drawingControllerProvider.notifier).importImage();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final drawingState = ref.watch(drawingControllerProvider);
+
+    // Отображение уведомлений об ошибках и успехе
+    ref.listen(drawingControllerProvider, (previous, next) {
+      // Проверяем, что состояние операции изменилось
+      if (next.operationState is DrawingOperationError) {
+        final errorState = next.operationState as DrawingOperationError;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${errorState.message}')),
+        );
+        // Сбрасываем состояние ошибки
+        Future.microtask(() {
+          ref.read(drawingControllerProvider.notifier).resetOperationState();
+        });
+      }
+      
+      // Проверяем успешное сохранение
+      if (next.operationState is DrawingOperationSuccess && 
+          previous?.operationState is! DrawingOperationSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Холст успешно сохранён!')),
+        );
+        // Сбрасываем состояние успеха
+        Future.microtask(() {
+          ref.read(drawingControllerProvider.notifier).resetOperationState();
+        });
+      }
+    });
+
     return Scaffold(
-      backgroundColor: Colors.green,
       appBar: AppBar(
         title: const Text('Редактор'),
         actions: [
-          // Кнопка загрузки изображения из галереи
-          IconButton(
-            icon: const Icon(Icons.photo_library),
-            onPressed: _pickImageFromGallery,
-            tooltip: 'Загрузить из галереи',
-          ),
-          // Кнопка сохранения
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: _saveDrawing,
+            onPressed: _onSavePressed,
             tooltip: 'Сохранить',
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Панель инструментов
-          _buildToolbar(),
-
-          // Холст для рисования
-          Expanded(
-            child: RepaintBoundary(
-              key: _canvasKey,
-              child: DrawingCanvas(
-                points: _points,
-                backgroundImage: _backgroundImage,
-                onPanStart: _onPanStart,
-                onPanUpdate: _onPanUpdate,
-                onPanEnd: _onPanEnd,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Панель инструментов
-  Widget _buildToolbar() {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Кнопка очистки холста
           IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _clearCanvas,
+            icon: const Icon(Icons.delete),
+            onPressed: _onClearPressed,
             tooltip: 'Очистить',
           ),
-
-          // Кнопка отмены последнего действия
-          IconButton(
-            icon: const Icon(Icons.undo),
-            onPressed: _points.isNotEmpty ? _undo : null,
-            tooltip: 'Отменить',
-          ),
-
-          // TODO: Добавим выбор цвета, размера кисти и т.д.
         ],
       ),
-    );
-  }
-
-  // Начало рисования
-  void _onPanStart(DragStartDetails details) {
-    setState(() {
-      _points.add(
-        DrawingPoint(
-          offset: details.localPosition,
-          paint: Paint()
-            ..color = Colors.black
-            ..strokeWidth = 3.0
-            ..strokeCap = StrokeCap.round,
-        ),
-      );
-    });
-  }
-
-  // Процесс рисования
-  void _onPanUpdate(DragUpdateDetails details) {
-    setState(() {
-      _points.add(
-        DrawingPoint(
-          offset: details.localPosition,
-          paint: Paint()
-            ..color = Colors.black
-            ..strokeWidth = 3.0
-            ..strokeCap = StrokeCap.round,
-        ),
-      );
-    });
-  }
-
-  // Конец рисования (разрыв линии)
-  void _onPanEnd(DragEndDetails details) {
-    setState(() {
-      _points.add(DrawingPoint(offset: null, paint: null));
-    });
-  }
-
-  // Очистка холста
-  void _clearCanvas() {
-    setState(() {
-      _points.clear();
-      _backgroundImage = null;
-    });
-  }
-
-  // Отмена последнего действия
-  void _undo() {
-    setState(() {
-      if (_points.isNotEmpty) {
-        // Удаляем точки до последнего разрыва (null)
-        int lastNullIndex = _points.lastIndexWhere(
-          (point) => point.offset == null,
-        );
-
-        if (lastNullIndex != -1 && lastNullIndex > 0) {
-          _points.removeRange(lastNullIndex, _points.length);
-        } else {
-          _points.clear();
-        }
-      }
-    });
-  }
-
-  // Загрузка изображения из галереи
-  Future<void> _pickImageFromGallery() async {
-    try {
-      final imageService = ref.read(imageServiceProvider);
-      final imageFile = await imageService.pickImageFromGallery();
-
-      if (imageFile == null) return;
-
-      // Загружаем изображение как ui.Image
-      final bytes = await imageFile.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-
-      setState(() {
-        _backgroundImage = frame.image;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Изображение загружено')));
-      }
-    } catch (e) {
-      if (mounted) {
-        // Проверяем тип ошибки
-        if (e.toString().contains('доступа')) {
-          // Показываем диалог с предложением открыть настройки
-          _showPermissionDeniedDialog();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ошибка загрузки: $e'),
-              backgroundColor: Colors.red,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 21),
+        child: Column(
+          children: [
+            // Панель инструментов
+            SizedBox(
+              height: 86,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  EditorButton(
+                    icon: Icons.download,
+                    onTap: _onSavePressed,
+                    tooltip: 'Сохранить',
+                  ),
+                  const SizedBox(width: 12),
+                  EditorButton(
+                    icon: Icons.image,
+                    onTap: _onImportImage,
+                    tooltip: 'Импорт из галереи',
+                  ),
+                  const SizedBox(width: 12),
+                  EditorButton(
+                    icon: Icons.brush,
+                    onTap: _onBrushPressed,
+                    tooltip: 'Размер кисти',
+                  ),
+                  const SizedBox(width: 12),
+                  EditorButton(
+                    icon: Icons.color_lens,
+                    onTap: _onColorPressed,
+                    tooltip: 'Цвет',
+                  ),
+                  const SizedBox(width: 12),
+                  EditorButton(
+                    icon: Icons.delete_outline,
+                    onTap: _onEraserPressed,
+                    tooltip: drawingState.isEraserMode ? 'Выключить ластик' : 'Ластик',
+                    isActive: drawingState.isEraserMode,
+                  ),
+                ],
+              ),
             ),
-          );
-        }
-      }
-    }
-  }
-
-  // Диалог при отказе в разрешении
-  Future<void> _showPermissionDeniedDialog() async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Нет доступа к галерее'),
-        content: const Text(
-          'Для загрузки изображений необходимо разрешение. '
-          'Откройте настройки и предоставьте доступ к галерее.',
+            // Индикатор загрузки
+            if (drawingState.operationState is DrawingOperationLoading)
+              const Padding(
+                padding: EdgeInsets.all(12.0),
+                child: LinearProgressIndicator(),
+              ),
+            // Холст для рисования
+            Expanded(
+              child: GestureDetector(
+                onPanDown: (details) {
+                  ref.read(drawingControllerProvider.notifier).startStroke(details.localPosition);
+                },
+                onPanUpdate: (details) {
+                  ref.read(drawingControllerProvider.notifier).updateStroke(details.localPosition);
+                },
+                onPanEnd: (details) {
+                  ref.read(drawingControllerProvider.notifier).endStroke();
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: RepaintBoundary(
+                    key: _repaintBoundaryKey,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Фоновое изображение
+                        if (drawingState.backgroundImage != null)
+                          Image.memory(
+                            drawingState.backgroundImage!,
+                            fit: BoxFit.cover,
+                          ),
+                        // Слой рисования
+                        CustomPaint(
+                          painter: Painter(
+                            strokes: drawingState.strokes,
+                            currentStroke: drawingState.currentStroke,
+                          ),
+                          child: Container(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await openAppSettings();
-            },
-            child: const Text('Настройки'),
-          ),
-        ],
       ),
     );
   }
-
-  // Сохранение рисунка (пока заглушка)
-  Future<void> _saveDrawing() async {
-    try {
-      // Показываем индикатор загрузки
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      // 1. Получаем текущего пользователя
-      final currentUser = ref.read(authUserProvider).value;
-      if (currentUser == null) {
-        throw Exception('Пользователь не авторизован');
-      }
-
-      // 2. Создаем скриншот холста
-      final boundary =
-          _canvasKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 2.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final bytes = byteData!.buffer.asUint8List();
-
-      // 3. Сохраняем во временный файл
-      final tempDir = await getTemporaryDirectory();
-      final file = File(
-        '${tempDir.path}/drawing_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await file.writeAsBytes(bytes);
-
-      // 4. Загружаем в Firebase
-      final storageService = ref.read(firebaseStorageServiceProvider);
-      await storageService.saveDrawing(
-        imageFile: file,
-        authorId: currentUser.id,
-        title:
-            'Рисунок ${DateTime.now().day}.${DateTime.now().month}.${DateTime.now().year}',
-      );
-
-      // 5. Удаляем временный файл
-      await file.delete();
-
-      // Закрываем индикатор загрузки
-      if (mounted) {
-        Navigator.pop(context);
-
-        // Показываем успешное сообщение
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Рисунок сохранен!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Возвращаемся в галерею
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      // Закрываем индикатор загрузки
-      if (mounted) {
-        Navigator.pop(context);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ошибка сохранения: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-}
-
-// Модель точки рисования
-class DrawingPoint {
-  final Offset? offset;
-  final Paint? paint;
-
-  DrawingPoint({this.offset, this.paint});
 }

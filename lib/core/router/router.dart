@@ -58,7 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/drawing',
         name: 'drawing',
-        builder: (context, state) => const DrawingPage(),
+        builder: (context, state) => const EditorPage(),
       ),
       GoRoute(
         path: '/image-viewer',
