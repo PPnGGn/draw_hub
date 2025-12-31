@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:draw_hub/core/services/notification_service.dart';
 import 'package:draw_hub/features/drawing/domain/drawing_controller.dart';
 import 'package:draw_hub/features/drawing/ui/widgets/brush_size_dialog.dart';
 import 'package:draw_hub/features/drawing/ui/widgets/color_picker.dart';
@@ -7,18 +8,13 @@ import 'package:draw_hub/features/drawing/ui/widgets/editor_button.dart';
 import 'package:draw_hub/features/drawing/ui/widgets/painter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
-/// Страница редактора холста (Presentation Layer)
-/// Отвечает только за отображение UI и делегирование действий контроллеру
 class EditorPage extends ConsumerStatefulWidget {
   final Uint8List? backgroundImage;
   final bool closeOnSave;
-  const EditorPage({
-    this.backgroundImage,
-    this.closeOnSave = false,
-    super.key,
-  });
+  const EditorPage({this.backgroundImage, this.closeOnSave = false, super.key});
 
   @override
   ConsumerState<EditorPage> createState() => _EditorPageState();
@@ -30,15 +26,18 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   @override
   void initState() {
     super.initState();
-    // Инициализация контроллера с фоновым изображением
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(drawingControllerProvider.notifier).initializeEditor(backgroundImage: widget.backgroundImage);
+      ref
+          .read(drawingControllerProvider.notifier)
+          .initializeEditor(backgroundImage: widget.backgroundImage);
     });
   }
 
   /// Обработчик сохранения холста
   void _onSavePressed() {
-    ref.read(drawingControllerProvider.notifier).saveDrawing(_repaintBoundaryKey);
+    ref
+        .read(drawingControllerProvider.notifier)
+        .saveDrawing(_repaintBoundaryKey);
   }
 
   /// Обработчик выбора размера кисти
@@ -48,7 +47,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       context: context,
       builder: (context) => BrushSizeDialog(initialSize: currentWidth),
     );
-    
+
     if (newWidth != null && mounted) {
       ref.read(drawingControllerProvider.notifier).changeBrushWidth(newWidth);
     }
@@ -85,35 +84,39 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     await ref.read(drawingControllerProvider.notifier).importImage();
   }
 
+  /// Обработчик экспорта изображения
+  Future<void> _onExportPressed() async {
+    await ref
+        .read(drawingControllerProvider.notifier)
+        .exportDrawing(_repaintBoundaryKey);
+  }
+
   @override
   Widget build(BuildContext context) {
     final drawingState = ref.watch(drawingControllerProvider);
 
-    // Отображение уведомлений об ошибках и успехе
     ref.listen(drawingControllerProvider, (previous, next) {
-      // Проверяем, что состояние операции изменилось
       if (next.operationState is DrawingOperationError) {
         final errorState = next.operationState as DrawingOperationError;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: ${errorState.message}')),
-        );
-        // Сбрасываем состояние ошибки
+
+        // Show error notification
+        NotificationService().showErrorNotification(errorState.message);
+
+        // Reset error state
         Future.microtask(() {
           ref.read(drawingControllerProvider.notifier).resetOperationState();
         });
       }
-      
-      // Проверяем успешное сохранение
-      if (next.operationState is DrawingOperationSuccess && 
+      // Check for successful save
+      if (next.operationState is DrawingOperationSuccess &&
           previous?.operationState is! DrawingOperationSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Холст успешно сохранён!')),
-        );
-        // Сбрасываем состояние успеха
+        // Show success notification
+        NotificationService().showSuccessNotification();
+
+        // Reset success state
         Future.microtask(() {
           ref.read(drawingControllerProvider.notifier).resetOperationState();
         });
-
         if (widget.closeOnSave) {
           Future.microtask(() {
             if (context.mounted) {
@@ -129,14 +132,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         title: const Text('Редактор'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
+            icon: const Icon(Icons.check),
             onPressed: _onSavePressed,
             tooltip: 'Сохранить',
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _onClearPressed,
-            tooltip: 'Очистить',
           ),
         ],
       ),
@@ -144,46 +142,52 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         padding: const EdgeInsets.symmetric(horizontal: 21),
         child: Column(
           children: [
-            // Панель инструментов
             SizedBox(
               height: 86,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   EditorButton(
-                    icon: Icons.download,
-                    onTap: _onSavePressed,
-                    tooltip: 'Сохранить',
+                    icon: const Icon(Icons.share),
+                    onTap: _onExportPressed,
+                    tooltip: 'Экспорт',
                   ),
                   const SizedBox(width: 12),
                   EditorButton(
-                    icon: Icons.image,
+                    icon: SvgPicture.asset('assets/svg/import.svg'),
                     onTap: _onImportImage,
                     tooltip: 'Импорт из галереи',
                   ),
                   const SizedBox(width: 12),
                   EditorButton(
-                    icon: Icons.brush,
+                    icon: const Icon(Icons.brush),
                     onTap: _onBrushPressed,
                     tooltip: 'Размер кисти',
                   ),
                   const SizedBox(width: 12),
                   EditorButton(
-                    icon: Icons.color_lens,
+                    icon: SvgPicture.asset('assets/svg/palette.svg'),
                     onTap: _onColorPressed,
                     tooltip: 'Цвет',
                   ),
                   const SizedBox(width: 12),
                   EditorButton(
-                    icon: Icons.delete_outline,
+                    icon: SvgPicture.asset('assets/svg/eraser.svg'),
                     onTap: _onEraserPressed,
-                    tooltip: drawingState.isEraserMode ? 'Выключить ластик' : 'Ластик',
+                    tooltip: drawingState.isEraserMode
+                        ? 'Выключить ластик'
+                        : 'Ластик',
                     isActive: drawingState.isEraserMode,
+                  ),
+                  const SizedBox(width: 12),
+                  EditorButton(
+                    icon: Icon(Icons.clear_all),
+                    onTap: _onClearPressed,
+                    tooltip: 'Очистить',
                   ),
                 ],
               ),
             ),
-            // Индикатор загрузки
             if (drawingState.operationState is DrawingOperationLoading)
               const Padding(
                 padding: EdgeInsets.all(12.0),
@@ -193,10 +197,14 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             Expanded(
               child: GestureDetector(
                 onPanDown: (details) {
-                  ref.read(drawingControllerProvider.notifier).startStroke(details.localPosition);
+                  ref
+                      .read(drawingControllerProvider.notifier)
+                      .startStroke(details.localPosition);
                 },
                 onPanUpdate: (details) {
-                  ref.read(drawingControllerProvider.notifier).updateStroke(details.localPosition);
+                  ref
+                      .read(drawingControllerProvider.notifier)
+                      .updateStroke(details.localPosition);
                 },
                 onPanEnd: (details) {
                   ref.read(drawingControllerProvider.notifier).endStroke();
@@ -208,12 +216,12 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // Фоновое изображение
-                        if (drawingState.backgroundImage != null)
-                          Image.memory(
-                            drawingState.backgroundImage!,
-                            fit: BoxFit.cover,
-                          ),
+                        drawingState.backgroundImage != null
+                            ? Image.memory(
+                                drawingState.backgroundImage!,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(color: Colors.white),
                         // Слой рисования
                         CustomPaint(
                           painter: Painter(

@@ -1,3 +1,4 @@
+import 'package:draw_hub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class EditorButton extends StatelessWidget {
@@ -9,7 +10,7 @@ class EditorButton extends StatelessWidget {
     super.key,
   });
 
-  final IconData icon;
+  final Widget icon;
   final VoidCallback onTap;
   final String tooltip;
   final bool isActive;
@@ -23,11 +24,14 @@ class EditorButton extends StatelessWidget {
         child: Container(
           height: 38,
           width: 38,
+          padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: isActive ? Colors.blue : Colors.grey,
+            color: isActive
+                ? AppColors.primary
+                : AppColors.white.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: isActive ? Colors.white : Colors.black),
+          child: icon,
         ),
       ),
     );

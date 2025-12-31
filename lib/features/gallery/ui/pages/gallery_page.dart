@@ -18,12 +18,11 @@ class GalleryPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gallery'),
+        title: const Text('Галерея'),
         leading: IconButton(
           icon: const Icon(Icons.logout, color: AppColors.red),
           onPressed: () async {
-            final authUseCase = ref.read(authUseCaseProvider);
-            await authUseCase.logoutUseCase();
+            _logoutDialog(context, ref);
           },
         ),
         actions: drawingsAsync.when(
@@ -106,6 +105,29 @@ class GalleryPage extends ConsumerWidget {
     );
   }
 
+  void _logoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Выйти из аккаунта?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              final authUseCase = ref.read(authUseCaseProvider);
+              authUseCase.logoutUseCase();
+            },
+            child: const Text('Выйти', style: TextStyle(color: AppColors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Пустая галерея
   Widget _buildEmptyGallery(BuildContext context) {
     return Padding(
@@ -175,10 +197,7 @@ class GalleryPage extends ConsumerWidget {
 
         context.push(
           '/image-viewer',
-          extra: {
-            'imageUrl': imageUrl,
-            'heroTag': heroTag,
-          },
+          extra: {'imageUrl': imageUrl, 'heroTag': heroTag},
         );
       },
       child: Container(

@@ -5,16 +5,18 @@ final ThemeData appTheme = ThemeData(
   primaryColor: AppColors.primary,
   //scaffoldBackgroundColor: AppColors.surface,
   appBarTheme: AppBarTheme(
-    
-    foregroundColor: Colors.red,
-    elevation: 1,
+    elevation: 6,
     centerTitle: true,
-    surfaceTintColor: Colors.transparent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    ),
+    backgroundColor: AppColors.purple.withValues(alpha: 0.05),
     titleTextStyle: TextStyle(
       fontSize: 20,
       fontWeight: FontWeight.bold,
       color: AppColors.white,
     ),
+    shadowColor: AppColors.white.withValues(alpha: 0.2),
     iconTheme: IconThemeData(color: AppColors.primary),
   ),
   colorScheme: ColorScheme.dark(

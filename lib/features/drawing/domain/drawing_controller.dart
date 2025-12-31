@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
 import 'package:draw_hub/features/gallery/ui/providers/gallery_providers.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Состояние операции рисования
 sealed class DrawingOperationState {
@@ -108,28 +109,22 @@ class DrawingController extends Notifier<DrawingState> {
   /// Завершение штриха
   void endStroke() {
     if (state.currentStroke.isNotEmpty) {
-      final updatedStrokes = [...state.strokes, List<DrawingPoint>.from(state.currentStroke)];
-      state = state.copyWith(
-        strokes: updatedStrokes,
-        currentStroke: [],
-      );
+      final updatedStrokes = [
+        ...state.strokes,
+        List<DrawingPoint>.from(state.currentStroke),
+      ];
+      state = state.copyWith(strokes: updatedStrokes, currentStroke: []);
     }
   }
 
   /// Изменение цвета
   void changeColor(Color color) {
-    state = state.copyWith(
-      selectedColor: color,
-      isEraserMode: false,
-    );
+    state = state.copyWith(selectedColor: color, isEraserMode: false);
   }
 
   /// Изменение толщины кисти
   void changeBrushWidth(double width) {
-    state = state.copyWith(
-      selectedWidth: width,
-      isEraserMode: false,
-    );
+    state = state.copyWith(selectedWidth: width, isEraserMode: false);
   }
 
   /// Переключение ластика
@@ -139,10 +134,7 @@ class DrawingController extends Notifier<DrawingState> {
 
   /// Очистка холста
   void clearCanvas() {
-    state = state.copyWith(
-      strokes: [],
-      currentStroke: [],
-    );
+    state = state.copyWith(strokes: [], currentStroke: []);
   }
 
   /// Отмена последнего штриха
@@ -159,7 +151,9 @@ class DrawingController extends Notifier<DrawingState> {
     try {
       state = state.copyWith(operationState: const DrawingOperationLoading());
 
-      final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (image != null) {
         final imageData = await image.readAsBytes();
         state = state.copyWith(
@@ -176,6 +170,46 @@ class DrawingController extends Notifier<DrawingState> {
     }
   }
 
+  Future<void> shareDrawing(String imagePath) async {
+    final params = ShareParams(files: [XFile(imagePath)]);
+
+    await SharePlus.instance.share(params);
+  }
+
+  /// Экспорт рисунка через нативный share
+  Future<void> exportDrawing(GlobalKey repaintBoundaryKey) async {
+    try {
+      state = state.copyWith(operationState: const DrawingOperationLoading());
+
+      // 1. Делаем скриншот холста
+      final boundary =
+          repaintBoundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw Exception('Не удалось получить boundary для экспорта');
+      }
+
+      final image = await boundary.toImage(pixelRatio: 2.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final bytes = byteData!.buffer.asUint8List();
+
+      // 2. Создаём временный файл
+      final tempFile = await _createTempFile(bytes);
+
+      // 3. Шарим файл
+      await shareDrawing(tempFile.path);
+
+      // 4. Удаляем временный файл после шаринга
+      await tempFile.delete();
+
+      state = state.copyWith(operationState: const DrawingOperationSuccess());
+    } catch (e) {
+      state = state.copyWith(
+        operationState: DrawingOperationError('Ошибка экспорта: $e'),
+      );
+    }
+  }
+
   /// Сохранение рисунка
   Future<void> saveDrawing(GlobalKey repaintBoundaryKey) async {
     try {
@@ -188,7 +222,9 @@ class DrawingController extends Notifier<DrawingState> {
       }
 
       // 2. Создаем скриншот холста
-      final boundary = repaintBoundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          repaintBoundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) {
         throw Exception('Не удалось получить boundary для экспорта');
       }
@@ -200,11 +236,12 @@ class DrawingController extends Notifier<DrawingState> {
       // 3. Сохраняем через Firebase Storage Service
       final storageService = ref.read(firebaseStorageServiceProvider);
       final tempFile = await _createTempFile(bytes);
-      
+
       await storageService.saveDrawing(
         imageFile: tempFile,
         authorId: currentUser.id,
-        title: 'Рисунок ${DateTime.now().day}.${DateTime.now().month}.${DateTime.now().year}',
+        title:
+            'Рисунок ${DateTime.now().day}.${DateTime.now().month}.${DateTime.now().year}',
       );
 
       // 4. Удаляем временный файл
@@ -270,13 +307,16 @@ class DrawingState {
       selectedColor: selectedColor ?? this.selectedColor,
       selectedWidth: selectedWidth ?? this.selectedWidth,
       isEraserMode: isEraserMode ?? this.isEraserMode,
-      backgroundImage: clearBackground ? null : (backgroundImage ?? this.backgroundImage),
+      backgroundImage: clearBackground
+          ? null
+          : (backgroundImage ?? this.backgroundImage),
       operationState: operationState ?? this.operationState,
     );
   }
 }
 
 /// Provider для DrawingController
-final drawingControllerProvider = NotifierProvider<DrawingController, DrawingState>(
-  () => DrawingController(),
-);
+final drawingControllerProvider =
+    NotifierProvider<DrawingController, DrawingState>(
+      () => DrawingController(),
+    );
