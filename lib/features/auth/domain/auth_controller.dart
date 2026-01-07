@@ -1,6 +1,6 @@
 import 'package:draw_hub/core/errors/auth_exception.dart';
 import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
-import 'package:draw_hub/features/auth/usecases/auth_usecase.dart';
+import 'package:draw_hub/features/auth/domain/usecases/auth_usecase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 sealed class AuthOperationState {
@@ -47,10 +47,15 @@ class AuthController extends Notifier<AuthOperationState> {
   Future<void> register({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     state = const AuthOperationLoading();
     try {
-      await _authUseCase.registrationUseCase(email: email, password: password);
+      await _authUseCase.registrationUseCase(
+        email: email,
+        password: password,
+        displayName: displayName,
+      );
       state = const AuthOperationSuccess();
     } on AuthException catch (e) {
       state = AuthOperationError(e.userMessage);

@@ -13,6 +13,7 @@ class FirebaseStorageService {
     required File imageFile,
     required String authorId,
     required String title,
+    required String authorName,
   }) async {
     try {
       // 1. Читаем файл
@@ -68,6 +69,7 @@ class FirebaseStorageService {
         createdAt: DateTime.now(),
         imageUrl: 'data:image/jpeg;base64,$imageBase64',
         thumbnailUrl: 'data:image/jpeg;base64,$thumbnailBase64',
+        authorName: authorName,
       );
 
       // 9. Сохраняем в Firestore
@@ -80,6 +82,7 @@ class FirebaseStorageService {
         id: docRef.id,
         title: drawing.title,
         authorId: drawing.authorId,
+        authorName: drawing.authorName,
         createdAt: drawing.createdAt,
         imageUrl: drawing.imageUrl,
         thumbnailUrl: drawing.thumbnailUrl,

@@ -4,6 +4,7 @@ class DrawingModel {
   final String id;
   final String title;
   final String authorId;
+  final String authorName;
   final DateTime createdAt;
   final String imageUrl; // URL в Firebase Storage или base64
   final String? thumbnailUrl; // Превью для быстрой загрузки
@@ -12,6 +13,7 @@ class DrawingModel {
     required this.id,
     required this.title,
     required this.authorId,
+    required this.authorName,
     required this.createdAt,
     required this.imageUrl,
     this.thumbnailUrl,
@@ -23,6 +25,7 @@ class DrawingModel {
       id: doc.id,
       title: data['title'] ?? 'Без названия',
       authorId: data['authorId'] ?? '',
+      authorName: data['authorName'] ?? 'Нет имени',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       imageUrl: data['imageUrl'] ?? '',
       thumbnailUrl: data['thumbnailUrl'],
@@ -33,6 +36,7 @@ class DrawingModel {
     return {
       'title': title,
       'authorId': authorId,
+      'authorName': authorName,
       'createdAt': Timestamp.fromDate(createdAt),
       'imageUrl': imageUrl,
       'thumbnailUrl': thumbnailUrl,

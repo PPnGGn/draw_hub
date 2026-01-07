@@ -16,7 +16,8 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _passwordConfirmController = TextEditingController();
+  final TextEditingController _passwordConfirmController =
+      TextEditingController();
 
   @override
   void dispose() {
@@ -87,7 +88,9 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
 
                   FilledButton(
                     onPressed: isLoading ? null : _handleRegistration,
-                    child: isLoading ? const Text('Загрузка...') : const Text('Регистрация'),
+                    child: isLoading
+                        ? const Text('Загрузка...')
+                        : const Text('Регистрация'),
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -100,9 +103,15 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
   }
 
   Future<void> _handleRegistration() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirm = _passwordConfirmController.text.trim();
+
+    if (name.isEmpty) {
+      showErrorSnackBar(context, 'Введите имя');
+      return;
+    }
 
     // Валидация email
     if (!EmailValidator.validate(email)) {
@@ -122,7 +131,9 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
       return;
     }
 
-    await ref.read(authControllerProvider.notifier).register(email: email, password: password);
+    await ref
+        .read(authControllerProvider.notifier)
+        .register(email: email, password: password, displayName: name);
 
     final newState = ref.read(authControllerProvider);
     if (newState is AuthOperationSuccess) {

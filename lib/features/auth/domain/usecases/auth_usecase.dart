@@ -9,10 +9,12 @@ class AuthUseCase {
   Future<User> registrationUseCase({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     return await _authService.registerViaEmailPassword(
       email: email,
       password: password,
+      displayName: displayName,
     );
   }
 

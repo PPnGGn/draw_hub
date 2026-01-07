@@ -54,7 +54,7 @@ class GalleryPage extends ConsumerWidget {
               // Контент
               drawings.isEmpty
                   ? _buildEmptyGallery(context)
-                  : _buildGallery(drawings, context),
+                  : _buildGallery(drawings, context, ref),
             ],
           );
         },
@@ -146,7 +146,11 @@ class GalleryPage extends ConsumerWidget {
   }
 
   // Галерея с рисунками
-  Widget _buildGallery(List<DrawingModel> drawings, BuildContext context) {
+  Widget _buildGallery(
+    List<DrawingModel> drawings,
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     return GridView.builder(
       padding: const EdgeInsets.only(
         left: 16.0,
@@ -163,7 +167,7 @@ class GalleryPage extends ConsumerWidget {
       itemCount: drawings.length,
       itemBuilder: (context, index) {
         final drawing = drawings[index];
-        return _buildDrawingCard(drawing, context, index); // ✅ Передаём index
+        return _buildDrawingCard(drawing, context, ref, index);
       },
     );
   }
@@ -172,6 +176,7 @@ class GalleryPage extends ConsumerWidget {
   Widget _buildDrawingCard(
     DrawingModel drawing,
     BuildContext context,
+    WidgetRef ref,
     int index,
   ) {
     final heroTag = 'gallery_image_${drawing.id}_$index';
@@ -200,6 +205,11 @@ class GalleryPage extends ConsumerWidget {
           extra: {'imageUrl': imageUrl, 'heroTag': heroTag},
         );
       },
+      onLongPress: () => _showDeleteDialog(
+        context: context,
+        ref: ref,
+        drawingId: drawing.id,
+      ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -220,6 +230,42 @@ class GalleryPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteDialog({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String drawingId,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Удалить рисунок?'),
+        content: const Text('Действие нельзя отменить.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final storageService = ref.read(firebaseStorageServiceProvider);
+      await storageService.deleteDrawing(drawingId);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка удаления: $e')),
+      );
+    }
   }
 
   // Отображение изображения (без навигации!)

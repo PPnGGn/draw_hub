@@ -1,13 +1,14 @@
 import 'dart:typed_data';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:draw_hub/core/services/firebase_storage_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:draw_hub/features/auth/ui/providers/auth_providers.dart';
-import 'package:draw_hub/features/gallery/ui/providers/gallery_providers.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Состояние операции рисования
@@ -24,7 +25,8 @@ class DrawingOperationLoading extends DrawingOperationState {
 }
 
 class DrawingOperationSuccess extends DrawingOperationState {
-  const DrawingOperationSuccess();
+  final String? operation; // 'save', 'export', 'import'
+  const DrawingOperationSuccess({this.operation});
 }
 
 class DrawingOperationError extends DrawingOperationState {
@@ -66,6 +68,7 @@ class DrawingPoint {
 /// Контроллер для рисования
 class DrawingController extends Notifier<DrawingState> {
   final ImagePicker _imagePicker = ImagePicker();
+  final FirebaseStorageService _firebaseStorageService = FirebaseStorageService();
 
   @override
   DrawingState build() {
@@ -158,7 +161,7 @@ class DrawingController extends Notifier<DrawingState> {
         final imageData = await image.readAsBytes();
         state = state.copyWith(
           backgroundImage: imageData,
-          operationState: const DrawingOperationSuccess(),
+          operationState: const DrawingOperationSuccess(operation: 'import'),
         );
       } else {
         state = state.copyWith(operationState: const DrawingOperationIdle());
@@ -210,49 +213,74 @@ class DrawingController extends Notifier<DrawingState> {
     }
   }
 
-  /// Сохранение рисунка
-  Future<void> saveDrawing(GlobalKey repaintBoundaryKey) async {
+
+  Future<void> saveDrawing(
+    GlobalKey repaintBoundaryKey, {
+    String? title,
+  }) async {
     try {
       state = state.copyWith(operationState: const DrawingOperationLoading());
 
-      // 1. Получаем текущего пользователя
-      final currentUser = ref.read(authUserProvider).value;
-      if (currentUser == null) {
+      // 1. Получаем изображение с холста
+      final RenderRepaintBoundary boundary =
+          repaintBoundaryKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      final Uint8List imageBytes = byteData!.buffer.asUint8List();
+
+      // 2. Получаем текущего пользователя
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
         throw Exception('Пользователь не авторизован');
       }
 
-      // 2. Создаем скриншот холста
-      final boundary =
-          repaintBoundaryKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw Exception('Не удалось получить boundary для экспорта');
-      }
+      // 3. Определяем имя автора (сначала из FirebaseAuth, затем из Firestore users/{uid})
+      final authorName = await _resolveAuthorName(user);
 
-      final image = await boundary.toImage(pixelRatio: 2.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final bytes = byteData!.buffer.asUint8List();
-
-      // 3. Сохраняем через Firebase Storage Service
-      final storageService = ref.read(firebaseStorageServiceProvider);
-      final tempFile = await _createTempFile(bytes);
-
-      await storageService.saveDrawing(
+      // 4. Сохраняем через общий сервис (Firestore: base64 + thumbnail)
+      final tempFile = await _createTempFile(imageBytes);
+      await _firebaseStorageService.saveDrawing(
         imageFile: tempFile,
-        authorId: currentUser.id,
-        title:
-            'Рисунок ${DateTime.now().day}.${DateTime.now().month}.${DateTime.now().year}',
+        authorId: user.uid,
+        title: title ?? 'Рисунок ${DateTime.now().day}.${DateTime.now().month}',
+        authorName: authorName,
       );
-
-      // 4. Удаляем временный файл
       await tempFile.delete();
 
-      state = state.copyWith(operationState: const DrawingOperationSuccess());
+      state = state.copyWith(
+        operationState: const DrawingOperationSuccess(operation: 'save'),
+      );
     } catch (e) {
       state = state.copyWith(
         operationState: DrawingOperationError('Ошибка сохранения: $e'),
       );
     }
+  }
+
+  Future<String> _resolveAuthorName(User user) async {
+    final displayName = user.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final data = doc.data();
+      final nameFromDb = (data?['displayName'] as String?)?.trim();
+      if (nameFromDb != null && nameFromDb.isNotEmpty) {
+        return nameFromDb;
+      }
+    } catch (_) {
+      // Игнорируем и возвращаем дефолт ниже
+    }
+
+    return 'Без имени';
   }
 
   /// Создает временный файл для сохранения

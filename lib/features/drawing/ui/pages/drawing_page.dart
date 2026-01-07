@@ -110,6 +110,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       // Check for successful save
       if (next.operationState is DrawingOperationSuccess &&
           previous?.operationState is! DrawingOperationSuccess) {
+        final successState = next.operationState as DrawingOperationSuccess;
         // Show success notification
         NotificationService().showSuccessNotification();
 
@@ -117,7 +118,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         Future.microtask(() {
           ref.read(drawingControllerProvider.notifier).resetOperationState();
         });
-        if (widget.closeOnSave) {
+
+        if (successState.operation == 'save') {
           Future.microtask(() {
             if (context.mounted) {
               context.pop();
