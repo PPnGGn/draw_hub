@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:draw_hub/core/services/notification_service.dart';
 import 'package:draw_hub/features/drawing/domain/drawing_controller.dart';
 import 'package:draw_hub/features/drawing/ui/widgets/brush_size_dialog.dart';
@@ -11,16 +10,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
-class EditorPage extends ConsumerStatefulWidget {
+class DrawningPage extends ConsumerStatefulWidget {
   final Uint8List? backgroundImage;
   final bool closeOnSave;
-  const EditorPage({this.backgroundImage, this.closeOnSave = false, super.key});
+  const DrawningPage({
+    this.backgroundImage,
+    this.closeOnSave = false,
+    super.key,
+  });
 
   @override
-  ConsumerState<EditorPage> createState() => _EditorPageState();
+  ConsumerState<DrawningPage> createState() => _EditorPageState();
 }
 
-class _EditorPageState extends ConsumerState<EditorPage> {
+class _EditorPageState extends ConsumerState<DrawningPage> {
   final GlobalKey _repaintBoundaryKey = GlobalKey();
 
   @override
@@ -93,8 +96,6 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final drawingState = ref.watch(drawingControllerProvider);
-
     ref.listen(drawingControllerProvider, (previous, next) {
       if (next.operationState is DrawingOperationError) {
         final errorState = next.operationState as DrawingOperationError;
@@ -146,71 +147,85 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           children: [
             SizedBox(
               height: 86,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  EditorButton(
-                    icon: const Icon(Icons.share),
-                    onTap: _onExportPressed,
-                    tooltip: 'Экспорт',
-                  ),
-                  const SizedBox(width: 12),
-                  EditorButton(
-                    icon: SvgPicture.asset('assets/svg/import.svg'),
-                    onTap: _onImportImage,
-                    tooltip: 'Импорт из галереи',
-                  ),
-                  const SizedBox(width: 12),
-                  EditorButton(
-                    icon: const Icon(Icons.brush),
-                    onTap: _onBrushPressed,
-                    tooltip: 'Размер кисти',
-                  ),
-                  const SizedBox(width: 12),
-                  EditorButton(
-                    icon: SvgPicture.asset('assets/svg/palette.svg'),
-                    onTap: _onColorPressed,
-                    tooltip: 'Цвет',
-                  ),
-                  const SizedBox(width: 12),
-                  EditorButton(
-                    icon: SvgPicture.asset('assets/svg/eraser.svg'),
-                    onTap: _onEraserPressed,
-                    tooltip: drawingState.isEraserMode
-                        ? 'Выключить ластик'
-                        : 'Ластик',
-                    isActive: drawingState.isEraserMode,
-                  ),
-                  const SizedBox(width: 12),
-                  EditorButton(
-                    icon: Icon(Icons.clear_all),
-                    onTap: _onClearPressed,
-                    tooltip: 'Очистить',
-                  ),
-                ],
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final isEraser = ref.watch(
+                    drawingControllerProvider.select((s) => s.isEraserMode),
+                  );
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      EditorButton(
+                        icon: const Icon(Icons.share),
+                        onTap: _onExportPressed,
+                        tooltip: 'Экспорт',
+                      ),
+                      const SizedBox(width: 12),
+                      EditorButton(
+                        icon: SvgPicture.asset('assets/svg/import.svg'),
+                        onTap: _onImportImage,
+                        tooltip: 'Импорт из галереи',
+                      ),
+                      const SizedBox(width: 12),
+                      EditorButton(
+                        icon: const Icon(Icons.brush),
+                        onTap: _onBrushPressed,
+                        tooltip: 'Размер кисти',
+                      ),
+                      const SizedBox(width: 12),
+                      EditorButton(
+                        icon: SvgPicture.asset('assets/svg/palette.svg'),
+                        onTap: _onColorPressed,
+                        tooltip: 'Цвет',
+                      ),
+                      const SizedBox(width: 12),
+                      EditorButton(
+                        icon: SvgPicture.asset('assets/svg/eraser.svg'),
+                        onTap: _onEraserPressed,
+                        tooltip: isEraser ? 'Выключить ластик' : 'Ластик',
+                        isActive: isEraser,
+                      ),
+                      const SizedBox(width: 12),
+                      EditorButton(
+                        icon: Icon(Icons.clear_all),
+                        onTap: _onClearPressed,
+                        tooltip: 'Очистить',
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
-            if (drawingState.operationState is DrawingOperationLoading)
-              const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: LinearProgressIndicator(),
-              ),
+
+            // Загрузка
+            Consumer(
+              builder: (context, ref, _) {
+                final isLoading = ref.watch(
+                  drawingControllerProvider.select(
+                    (s) => s.operationState is DrawingOperationLoading,
+                  ),
+                );
+                if (isLoading) {
+                  return const Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: LinearProgressIndicator(),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
             // Холст для рисования
             Expanded(
               child: GestureDetector(
-                onPanDown: (details) {
-                  ref
-                      .read(drawingControllerProvider.notifier)
-                      .startStroke(details.localPosition);
-                },
-                onPanUpdate: (details) {
-                  ref
-                      .read(drawingControllerProvider.notifier)
-                      .updateStroke(details.localPosition);
-                },
-                onPanEnd: (details) {
-                  ref.read(drawingControllerProvider.notifier).endStroke();
-                },
+                onPanDown: (details) => ref
+                    .read(drawingControllerProvider.notifier)
+                    .startStroke(details.localPosition),
+                onPanUpdate: (details) => ref
+                    .read(drawingControllerProvider.notifier)
+                    .updateStroke(details.localPosition),
+                onPanEnd: (_) =>
+                    ref.read(drawingControllerProvider.notifier).endStroke(),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: RepaintBoundary(
@@ -218,19 +233,40 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        drawingState.backgroundImage != null
-                            ? Image.memory(
-                                drawingState.backgroundImage!,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(color: Colors.white),
-                        // Слой рисования
-                        CustomPaint(
-                          painter: Painter(
-                            strokes: drawingState.strokes,
-                            currentStroke: drawingState.currentStroke,
-                          ),
-                          child: Container(),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final bgImage = ref.watch(
+                              drawingControllerProvider.select(
+                                (s) => s.backgroundImage,
+                              ),
+                            );
+                            return bgImage != null
+                                ? Image.memory(bgImage, fit: BoxFit.cover)
+                                : Container(color: Colors.white);
+                          },
+                        ),
+
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final strokes = ref.watch(
+                              drawingControllerProvider.select(
+                                (s) => s.strokes,
+                              ),
+                            );
+                            final currentStroke = ref.watch(
+                              drawingControllerProvider.select(
+                                (s) => s.currentStroke,
+                              ),
+                            );
+
+                            return CustomPaint(
+                              painter: Painter(
+                                strokes: strokes,
+                                currentStroke: currentStroke,
+                              ),
+                              child: Container(),
+                            );
+                          },
                         ),
                       ],
                     ),

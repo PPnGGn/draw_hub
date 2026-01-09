@@ -64,13 +64,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (extra is Map<String, dynamic>) {
             final backgroundImage = extra['backgroundImage'];
             final closeOnSave = extra['closeOnSave'];
-            return EditorPage(
+            return DrawningPage(
               backgroundImage: backgroundImage is Uint8List ? backgroundImage : null,
               closeOnSave: closeOnSave is bool ? closeOnSave : false,
             );
           }
 
-          return const EditorPage();
+          return const DrawningPage();
         },
       ),
       GoRoute(
