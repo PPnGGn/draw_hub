@@ -38,6 +38,14 @@ class _EditorPageState extends ConsumerState<DrawningPage> {
 
   /// Обработчик сохранения холста
   void _onSavePressed() {
+    final isLoading = ref.read(
+      drawingControllerProvider.select(
+        (s) => s.operationState is DrawingOperationLoading,
+      ),
+    );
+    
+    if (isLoading) return; // Предотвращаем множественные нажатия
+    
     ref
         .read(drawingControllerProvider.notifier)
         .saveDrawing(_repaintBoundaryKey);
@@ -134,10 +142,19 @@ class _EditorPageState extends ConsumerState<DrawningPage> {
       appBar: AppBar(
         title: const Text('Редактор'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _onSavePressed,
-            tooltip: 'Сохранить',
+          Consumer(
+            builder: (context, ref, child) {
+              final isLoading = ref.watch(
+                drawingControllerProvider.select(
+                  (s) => s.operationState is DrawingOperationLoading,
+                ),
+              );
+              return IconButton(
+                icon: const Icon(Icons.check),
+                onPressed: isLoading ? null : _onSavePressed,
+                tooltip: 'Сохранить',
+              );
+            },
           ),
         ],
       ),

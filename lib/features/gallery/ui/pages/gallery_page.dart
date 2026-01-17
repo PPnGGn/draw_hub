@@ -46,9 +46,9 @@ class GalleryPage extends ConsumerWidget {
               // Фон
               Image.asset(
                 'assets/png/background_img.png',
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
                 width: double.infinity,
-                height: double.infinity,
+         height: MediaQuery.of(context).size.height,
               ),
 
               // Контент
@@ -62,9 +62,9 @@ class GalleryPage extends ConsumerWidget {
           children: [
             Image.asset(
               'assets/png/background_img.png',
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
               width: double.infinity,
-              height: double.infinity,
+              height: MediaQuery.of(context).size.height,
             ),
             const GalleryShimmer(),
           ],
