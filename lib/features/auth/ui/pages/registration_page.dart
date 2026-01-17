@@ -18,6 +18,11 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
+  
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _passwordConfirmFocusNode = FocusNode();
 
   @override
   void dispose() {
@@ -25,6 +30,12 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
+    
+    _nameFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _passwordConfirmFocusNode.dispose();
+    
     super.dispose();
   }
 
@@ -43,58 +54,64 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
             width: double.infinity,
             height: MediaQuery.of(context).size.height,
           ),
-          Padding(
+          SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 200),
-                  Text(
-                    'Регистрация',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.start,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    controller: _nameController,
-                    hintText: 'Введите имя',
-                    labelText: 'Имя',
-                  ),
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    controller: _emailController,
-                    hintText: 'Введите email',
-                    labelText: 'E-mail',
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    controller: _passwordController,
-                    hintText: 'Введите пароль',
-                    labelText: 'Пароль',
-                    isPassword: true,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    controller: _passwordConfirmController,
-                    hintText: 'Введите пароль повторно',
-                    labelText: 'Подтвердите пароль',
-                    isPassword: true,
-                  ),
-                  const SizedBox(height: 100),
-
-                  FilledButton(
-                    onPressed: isLoading ? null : _handleRegistration,
-                    child: isLoading
-                        ? const Text('Загрузка...')
-                        : const Text('Регистрация'),
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 200),
+                Text(
+                  'Регистрация',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.start,
+                ),
+                const SizedBox(height: 20),
+                CustomTextField(
+                  controller: _nameController,
+                  focusNode: _nameFocusNode,
+                  hintText: 'Введите имя',
+                  labelText: 'Имя',
+                  onSubmitted: () => _emailFocusNode.requestFocus(),
+                ),
+                const SizedBox(height: 20),
+                CustomTextField(
+                  controller: _emailController,
+                  focusNode: _emailFocusNode,
+                  hintText: 'Введите email',
+                  labelText: 'E-mail',
+                  onSubmitted: () => _passwordFocusNode.requestFocus(),
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 20),
+                CustomTextField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  hintText: 'Введите пароль',
+                  labelText: 'Пароль',
+                  isPassword: true,
+                  onSubmitted: () => _passwordConfirmFocusNode.requestFocus(),
+                ),
+                const SizedBox(height: 20),
+                CustomTextField(
+                  controller: _passwordConfirmController,
+                  focusNode: _passwordConfirmFocusNode,
+                  hintText: 'Введите пароль повторно',
+                  labelText: 'Подтвердите пароль',
+                  isPassword: true,
+                  onSubmitted: _handleRegistration,
+                ),
+                const SizedBox(height: 100),
+          
+                FilledButton(
+                  onPressed: isLoading ? null : _handleRegistration,
+                  child: isLoading
+                      ? const Text('Загрузка...')
+                      : const Text('Регистрация'),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ],
@@ -131,14 +148,17 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
       return;
     }
 
-    await ref
-        .read(authControllerProvider.notifier)
-        .register(email: email, password: password, displayName: name);
+    // Сохраняем notifier перед асинхронной операцией
+    final authNotifier = ref.read(authControllerProvider.notifier);
+    
+    await authNotifier.register(email: email, password: password, displayName: name);
 
+    // Проверяем, что виджет все еще смонтирован перед использованием ref
+    if (!mounted) return;
+    
     final newState = ref.read(authControllerProvider);
     if (newState is AuthOperationSuccess) {
     } else if (newState is AuthOperationError) {
-      if (!mounted) return;
       showErrorSnackBar(context, newState.message);
     }
   }

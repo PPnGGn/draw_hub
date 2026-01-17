@@ -8,12 +8,16 @@ class CustomTextField extends StatefulWidget {
     required this.hintText,
     required this.labelText,
     this.isPassword = false,
+    this.focusNode,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
   final String hintText;
   final String labelText;
   final bool isPassword;
+  final FocusNode? focusNode;
+  final VoidCallback? onSubmitted;
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -56,8 +60,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
           const SizedBox(height: 4),
           TextField(
             controller: widget.controller,
+            focusNode: widget.focusNode,
             style: Theme.of(context).textTheme.bodyMedium,
             obscureText: widget.isPassword ? _obscureText : false,
+            onSubmitted: widget.onSubmitted != null 
+                ? (_) => widget.onSubmitted!() 
+                : null,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.only(bottom: 8),
               isDense: true,

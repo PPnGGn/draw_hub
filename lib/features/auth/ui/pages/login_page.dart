@@ -18,10 +18,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -64,6 +71,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   labelText: 'E-mail',
                   hintText: 'Введите email',
                   controller: _emailController,
+                  focusNode: _emailFocusNode,
+                  onSubmitted: () => _passwordFocusNode.requestFocus(),
                 ),
                 const SizedBox(height: 20),
                 CustomTextField(
@@ -71,6 +80,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   hintText: 'Введите пароль',
                   isPassword: true,
                   controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  onSubmitted: _handleLogin,
                 ),
                 const Spacer(),
                 GradientButton(
@@ -108,8 +119,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    await ref
-        .read(authControllerProvider.notifier)
-        .login(email: email, password: password);
+    // Сохраняем notifier перед асинхронной операцией
+    final authNotifier = ref.read(authControllerProvider.notifier);
+    
+    await authNotifier.login(email: email, password: password);
   }
 }
